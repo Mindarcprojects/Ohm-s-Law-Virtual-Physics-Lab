@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ohm's Law Virtual Physics Lab</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #070a12;
+            --panel-bg: #0f172a;
+            --panel-border: #1e293b;
+            --accent-red: #ef4444;
+            --accent-cyan: #06b6d4;
+            --accent-yellow: #f59e0b;
+            --accent-green: #10b981;
+            --text-main: #f8fafc;
+            --text-sub: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 14px;
+            overflow-x: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 12px;
+            width: 100%;
+            flex: 1;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            min-width: 0;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 6px;
+        }
+
+        /* KNOB CONTROLS */
+        .knob-section {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 0;
+        }
+
+        .knob-card {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            flex: 1;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .knob-label {
+            font-size: 0.68rem;
+            color: var(--text-sub);
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .knob-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .knob-wrapper:active { cursor: grabbing; }
+
+        .knob-body {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #334155 0%, #0f172a 100%);
+            box-shadow: inset 0 2px 3px rgba(255,255,255,0.2), 0 6px 14px rgba(0,0,0,0.8);
+            border: 2px solid #475569;
+            position: relative;
+            transform: rotate(-135deg);
+        }
+
+        .knob-indicator {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 12px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .knob-readout {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
+        /* BUTTONS */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 0.72rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: #080c14;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+        }
+
+        .btn-primary:hover { background: #22d3ee; }
+
+        .btn-secondary {
+            background: #1e293b;
+            color: var(--text-main);
+            border: 1px solid #334155;
+        }
+
+        .btn-secondary:hover { background: #334155; }
+
+        /* ANALOG METERS */
+        .meters-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .analog-meter {
+            flex: 1;
+            background: #080c14;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .meter-scale {
+            width: 110px;
+            height: 55px;
+            border: 2px solid #334155;
+            border-bottom: none;
+            border-radius: 55px 55px 0 0;
+            position: relative;
+            background: radial-gradient(circle at bottom, #0f172a 0%, #080c14 80%);
+            overflow: hidden;
+        }
+
+        .meter-needle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            height: 48px;
+            background: var(--accent-red);
+            transform-origin: bottom center;
+            transform: rotate(-60deg);
+            transition: transform 0.12s linear;
+            box-shadow: 0 0 6px var(--accent-red);
+        }
+
+        .meter-cap {
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            background: #ffffff;
+            border-radius: 50%;
+        }
+
+        .meter-info {
+            font-size: 0.65rem;
+            color: var(--text-sub);
+            font-weight: 800;
+            margin-top: 4px;
+        }
+
+        .meter-val {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: #fff;
+            font-family: monospace;
+        }
+
+        /* CIRCUIT SVG */
+        .circuit-bench {
+            background: #080c14;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 6px;
+        }
+
+        .circuit-svg {
+            width: 100%;
+            height: auto;
+            max-height: 250px;
+        }
+
+        .electron-flow {
+            stroke-dasharray: 6, 12;
+            animation: flow 1s linear infinite;
+        }
+
+        @keyframes flow {
+            from { stroke-dashoffset: 18; }
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* OBSERVATION TABLE */
+        .table-wrapper {
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            background: #080c14;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+
+        th {
+            background: #1e293b;
+            color: var(--accent-cyan);
+            padding: 6px;
+            position: sticky;
+            top: 0;
+            font-weight: 700;
+        }
+
+        td {
+            padding: 6px;
+            border-bottom: 1px solid #1e293b;
+            color: var(--text-main);
+            font-family: monospace;
+        }
+
+        tr:nth-child(even) { background: #0f172a; }
+
+        /* GRAPH CONTAINER */
+        .graph-container {
+            width: 100%;
+            height: 200px;
+            position: relative;
+        }
+
+        footer {
+            margin-top: 12px;
+            padding: 8px 0;
+            text-align: center;
+            border-top: 1px solid var(--panel-border);
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Ohm's Law Virtual Physics Lab</h1>
+    </header>
+
+    <div class="dashboard">
+        <!-- PANEL 1: CONTROLS -->
+        <div class="panel">
+            <div class="panel-title">Variable Controls</div>
+            <div class="knob-section">
+                <!-- Voltage Regulator -->
+                <div class="knob-card">
+                    <div class="knob-label">VOLTAGE SOURCE (V)</div>
+                    <div class="knob-wrapper" id="v-box">
+                        <div class="knob-body" id="v-knob">
+                            <div class="knob-indicator"></div>
+                        </div>
+                    </div>
+                    <div class="knob-readout" id="v-disp">2.0 V</div>
+                </div>
+
+                <!-- Resistance Rheostat -->
+                <div class="knob-card">
+                    <div class="knob-label">RHEOSTAT (R)</div>
+                    <div class="knob-wrapper" id="r-box">
+                        <div class="knob-body" id="r-knob" style="border-color: var(--accent-yellow);">
+                            <div class="knob-indicator" style="background: var(--accent-yellow); box-shadow: 0 0 8px var(--accent-yellow);"></div>
+                        </div>
+                    </div>
+                    <div class="knob-readout" id="r-disp" style="color: var(--accent-yellow);">1.0 Ω</div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-primary" id="btn-plot">Plot & Record Point</button>
+                <button class="btn-secondary" id="btn-reset">Reset Data</button>
+            </div>
+        </div>
+
+        <!-- PANEL 2: CIRCUIT & SCHEMATIC -->
+        <div class="panel">
+            <div class="panel-title">Schematic & Instruments</div>
+            
+            <div class="meters-row">
+                <div class="analog-meter">
+                    <div class="meter-scale">
+                        <div class="meter-needle" id="v-needle"></div>
+                        <div class="meter-cap"></div>
+                    </div>
+                    <div class="meter-info">VOLTMETER (0-24V)</div>
+                    <div class="meter-val" id="v-readout" style="color: var(--accent-red);">2.00 V</div>
+                </div>
+
+                <div class="analog-meter">
+                    <div class="meter-scale">
+                        <div class="meter-needle" id="i-needle" style="background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan);"></div>
+                        <div class="meter-cap"></div>
+                    </div>
+                    <div class="meter-info">AMMETER (0-5A)</div>
+                    <div class="meter-val" id="i-readout" style="color: var(--accent-cyan);">2.00 A</div>
+                </div>
+            </div>
+
+            <div class="circuit-bench">
+                <svg class="circuit-svg" viewBox="0 0 460 260">
+                    <!-- MAIN SERIES CIRCUIT LOOP -->
+                    <rect x="70" y="30" width="320" height="170" fill="none" stroke="#1e293b" stroke-width="8" rx="12"/>
+                    <rect id="wire-flow" x="70" y="30" width="320" height="170" fill="none" stroke="#06b6d4" stroke-width="4" class="electron-flow" rx="12"/>
+
+                    <!-- RESISTOR (TOP LOOP) -->
+                    <g transform="translate(180, 15)">
+                        <line x1="-10" y1="15" x2="110" y2="15" stroke="#94a3b8" stroke-width="3"/>
+                        <rect x="15" y="2" width="70" height="26" fill="#d97706" rx="5"/>
+                        <rect x="28" y="2" width="6" height="26" fill="#000"/>
+                        <rect x="42" y="2" width="6" height="26" fill="#ef4444"/>
+                        <rect x="56" y="2" width="6" height="26" fill="#f59e0b"/>
+                        <rect x="72" y="2" width="6" height="26" fill="#e2e8f0"/>
+                    </g>
+
+                    <!-- VOLTMETER INSIDE LOOP (UNDER RESISTOR) -->
+                    <!-- RED PROBE (LEFT) -->
+                    <line x1="160" y1="30" x2="160" y2="75" stroke="#ef4444" stroke-width="3"/>
+                    <line x1="160" y1="75" x2="195" y2="75" stroke="#ef4444" stroke-width="3"/>
+                    
+                    <!-- CYAN/BLUE PROBE (RIGHT) -->
+                    <line x1="300" y1="30" x2="300" y2="75" stroke="#06b6d4" stroke-width="3"/>
+                    <line x1="300" y1="75" x2="265" y2="75" stroke="#06b6d4" stroke-width="3"/>
+
+                    <g transform="translate(195, 57)">
+                        <rect x="0" y="0" width="70" height="36" fill="#0f172a" stroke="#ef4444" stroke-width="2" rx="6"/>
+                        <rect x="6" y="5" width="58" height="16" fill="#000000" rx="3"/>
+                        <text x="35" y="17" fill="#ef4444" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle" id="voltmeter-disp">02.00 V</text>
+                        <text x="35" y="30" fill="#94a3b8" font-size="7" font-weight="bold" text-anchor="middle">VOLTMETER</text>
+                    </g>
+
+                    <!-- DC BATTERY SOURCE -->
+                    <g transform="translate(45, 88)">
+                        <rect x="0" y="0" width="50" height="55" fill="#1e293b" stroke="#334155" stroke-width="2" rx="6"/>
+                        <line x1="15" y1="18" x2="35" y2="18" stroke="#ef4444" stroke-width="4"/>
+                        <line x1="20" y1="25" x2="30" y2="25" stroke="#94a3b8" stroke-width="2"/>
+                        <line x1="12" y1="32" x2="38" y2="32" stroke="#ef4444" stroke-width="4"/>
+                        <line x1="20" y1="39" x2="30" y2="39" stroke="#94a3b8" stroke-width="2"/>
+                        <text x="25" y="-5" fill="#ef4444" font-size="12" font-weight="bold" text-anchor="middle">+</text>
+                        <text x="25" y="70" fill="#64748b" font-size="12" font-weight="bold" text-anchor="middle">-</text>
+                        <text x="25" y="50" fill="#f8fafc" font-size="8" font-weight="bold" text-anchor="middle" id="psu-disp">2.0V</text>
+                    </g>
+
+                    <!-- SERIES AMMETER (RIGHT) -->
+                    <g transform="translate(365, 88)">
+                        <circle cx="25" cy="28" r="22" fill="#0f172a" stroke="#06b6d4" stroke-width="3"/>
+                        <text x="25" y="33" fill="#06b6d4" font-size="15" font-weight="bold" text-anchor="middle">A</text>
+                        <text x="25" y="62" fill="#06b6d4" font-size="8" font-weight="bold" text-anchor="middle" id="dmm-disp">2.00 A</text>
+                    </g>
+
+                    <!-- LOAD BULB (BOTTOM) -->
+                    <g transform="translate(205, 175)">
+                        <circle id="bulb-halo" cx="25" cy="15" r="30" fill="#f59e0b" opacity="0.1"/>
+                        <rect x="17" y="32" width="16" height="12" fill="#94a3b8" rx="2"/>
+                        <path d="M 12 25 C 5 15 10 0 25 0 C 40 0 45 15 38 25 Z" fill="rgba(255,255,255,0.08)" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <path id="filament" d="M 20 16 Q 22 10 25 12 Q 28 10 30 16" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- PANEL 3: OBSERVATION TABLE -->
+        <div class="panel">
+            <div class="panel-title">Observation Table</div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Voltage V (Volts)</th>
+                            <th>Current I (Amperes)</th>
+                            <th>Resistance R (Ohms)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="obs-table-body">
+                        <!-- Dynamic Rows Added Here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 4: GRAPH -->
+        <div class="panel">
+            <div class="panel-title">V-I Characteristic Graph</div>
+            <div class="graph-container">
+                <canvas id="viChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Made by Nikhil Raj
+    </footer>
+
+    <script>
+        let voltage = 2.0;
+        let resistance = 1.0;
+        let current = 2.0;
+        let sampleCount = 0;
+
+        const vBox = document.getElementById('v-box');
+        const rBox = document.getElementById('r-box');
+        const vKnob = document.getElementById('v-knob');
+        const rKnob = document.getElementById('r-knob');
+        const vDisp = document.getElementById('v-disp');
+        const rDisp = document.getElementById('r-disp');
+        const vReadout = document.getElementById('v-readout');
+        const iReadout = document.getElementById('i-readout');
+        const vNeedle = document.getElementById('v-needle');
+        const iNeedle = document.getElementById('i-needle');
+        const wireFlow = document.getElementById('wire-flow');
+        const psuDisp = document.getElementById('psu-disp');
+        const voltmeterDisp = document.getElementById('voltmeter-disp');
+        const dmmDisp = document.getElementById('dmm-disp');
+        const filament = document.getElementById('filament');
+        const bulbHalo = document.getElementById('bulb-halo');
+        const obsTableBody = document.getElementById('obs-table-body');
+
+        function attachKnob(wrapper, knob, min, max, defaultVal, onChange) {
+            let dragging = false;
+            let startY = 0;
+            let val = defaultVal;
+
+            function setAngle(v) {
+                const pct = (v - min) / (max - min);
+                const angle = -135 + (pct * 270);
+                knob.style.transform = `rotate(${angle}deg)`;
+            }
+            setAngle(defaultVal);
+
+            function handleStart(e) {
+                dragging = true;
+                startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+            }
+
+            function handleMove(e) {
+                if (!dragging) return;
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+                const dy = startY - clientY;
+                startY = clientY;
+                
+                const step = (max - min) / 240; 
+                val = Math.round(Math.min(max, Math.max(min, val + (dy * step))) * 10) / 10;
+                setAngle(val);
+                onChange(val);
+            }
+
+            function handleEnd() { dragging = false; }
+
+            wrapper.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+
+            wrapper.addEventListener('touchstart', handleStart, {passive: true});
+            window.addEventListener('touchmove', handleMove, {passive: true});
+            window.addEventListener('touchend', handleEnd);
+        }
+
+        attachKnob(vBox, vKnob, 0, 24, 2.0, v => { voltage = v; updateSystem(); });
+        attachKnob(rBox, rKnob, 1, 100, 1.0, r => { resistance = r; updateSystem(); });
+
+        function updateSystem() {
+            current = voltage / resistance;
+
+            vDisp.textContent = `${voltage.toFixed(1)} V`;
+            rDisp.textContent = `${resistance.toFixed(1)} Ω`;
+            vReadout.textContent = `${voltage.toFixed(2)} V`;
+            iReadout.textContent = `${current.toFixed(2)} A`;
+            
+            psuDisp.textContent = `${voltage.toFixed(1)}V`;
+            voltmeterDisp.textContent = `${voltage < 10 ? '0' : ''}${voltage.toFixed(2)} V`;
+            dmmDisp.textContent = `${current.toFixed(2)} A`;
+
+            const vDeg = -60 + ((voltage / 24) * 120);
+            const iDeg = -60 + (Math.min(current / 5, 1) * 120);
+            vNeedle.style.transform = `rotate(${vDeg}deg)`;
+            iNeedle.style.transform = `rotate(${iDeg}deg)`;
+
+            if (current <= 0.01) {
+                wireFlow.style.animationPlayState = 'paused';
+                wireFlow.style.opacity = '0.1';
+            } else {
+                wireFlow.style.animationPlayState = 'running';
+                wireFlow.style.opacity = '1';
+                const spd = Math.max(0.1, 1.8 / current);
+                wireFlow.style.animationDuration = `${spd}s`;
+            }
+
+            const intensity = Math.min(1, current / 1.5);
+            if (intensity <= 0.05) {
+                filament.style.stroke = '#e2e8f0';
+                filament.style.filter = 'none';
+                bulbHalo.style.opacity = '0';
+            } else {
+                filament.style.stroke = '#ffea00';
+                filament.style.filter = `drop-shadow(0 0 ${intensity * 8}px #ff9100)`;
+                bulbHalo.style.opacity = (intensity * 0.8).toString();
+                bulbHalo.style.r = (25 + intensity * 15).toString();
+            }
+        }
+
+        let chart;
+        function initChart() {
+            const ctx = document.getElementById('viChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'V-I Characteristics',
+                        data: [],
+                        backgroundColor: '#06b6d4',
+                        borderColor: '#06b6d4',
+                        showLine: true,
+                        borderWidth: 2,
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Current I (A)', color: '#64748b', font: {size: 10, weight: 'bold'} },
+                            ticks: { color: '#64748b', font: {size: 9} },
+                            grid: { color: '#1e293b' }
+                        },
+                        y: {
+                            type: 'linear',
+                            title: { display: true, text: 'Voltage V (V)', color: '#64748b', font: {size: 10, weight: 'bold'} },
+                            ticks: { color: '#64748b', font: {size: 9} },
+                            grid: { color: '#1e293b' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f8fafc', font: {size: 10} } }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('btn-plot').addEventListener('click', () => {
+            sampleCount++;
+            
+            chart.data.datasets[0].data.push({
+                x: parseFloat(current.toFixed(2)),
+                y: parseFloat(voltage.toFixed(2))
+            });
+            chart.data.datasets[0].data.sort((a, b) => a.x - b.x);
+            chart.update();
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${sampleCount}</td>
+                <td>${voltage.toFixed(2)}</td>
+                <td>${current.toFixed(2)}</td>
+                <td>${resistance.toFixed(2)}</td>
+            `;
+            obsTableBody.appendChild(row);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            chart.data.datasets[0].data = [];
+            chart.update();
+            obsTableBody.innerHTML = '';
+            sampleCount = 0;
+        });
+
+        window.onload = () => {
+            initChart();
+            updateSystem();
+        };
+    </script>
+</body>
+</html>
